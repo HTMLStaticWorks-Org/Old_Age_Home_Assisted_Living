@@ -51,3 +51,42 @@ document.querySelectorAll('form[data-demo-form]').forEach(form=>form.addEventLis
 const mapCanvas=document.querySelector('[data-map-canvas]');
 if(mapCanvas){let zoom=1;const setZoom=v=>{zoom=Math.min(1.6,Math.max(1,Number(v.toFixed(2))));mapCanvas.style.transform=`scale(${zoom})`;};document.querySelectorAll('[data-map-zoom]').forEach(btn=>btn.addEventListener('click',()=>{const act=btn.dataset.mapZoom;setZoom(act==='in'?zoom+0.2:act==='out'?zoom-0.2:1);}));}
 document.querySelectorAll('[data-year]').forEach(el=>el.textContent=new Date().getFullYear());
+const backToTopBtn=document.querySelector('[data-back-to-top]');
+if(backToTopBtn){
+  const toggleBackToTop=()=>{backToTopBtn.classList.toggle('visible',window.scrollY>300);};
+  window.addEventListener('scroll',toggleBackToTop,{passive:true});
+  toggleBackToTop();
+  backToTopBtn.addEventListener('click',()=>{
+    const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({top:0,behavior:reduced?'auto':'smooth'});
+  });
+}
+const syncCardHeadings=()=>{
+  const grids=document.querySelectorAll('.grid.three, .grid.four');
+  if(!grids.length)return;
+  grids.forEach(grid=>{
+    const headings=Array.from(grid.querySelectorAll('.card h3'));
+    if(!headings.length)return;
+    headings.forEach(h=>{h.style.minHeight='';});
+    const rows=new Map();
+    headings.forEach(h=>{
+      const card=h.closest('.card');
+      if(!card)return;
+      const top=Math.round(card.getBoundingClientRect().top);
+      if(!rows.has(top))rows.set(top,[]);
+      rows.get(top).push(h);
+    });
+    rows.forEach(group=>{
+      if(group.length<2)return;
+      const heights=group.map(h=>h.getBoundingClientRect().height);
+      const maxH=Math.max(...heights);
+      const minH=Math.min(...heights);
+      if(maxH-minH>2){group.forEach(h=>{h.style.minHeight=`${Math.ceil(maxH)}px`;});}
+    });
+  });
+};
+if(document.querySelector('.grid.three .card h3, .grid.four .card h3')){
+  syncCardHeadings();
+  window.addEventListener('resize',syncCardHeadings,{passive:true});
+  if(document.fonts&&document.fonts.ready){document.fonts.ready.then(syncCardHeadings);}
+}
